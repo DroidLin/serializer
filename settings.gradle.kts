@@ -18,6 +18,5 @@ dependencyResolutionManagement {
 }
 
 
-rootProject.name = "ProjectName"
-include(":android-only-module")
-include(":jvm-only-module")
+rootProject.name = "serializer"
+include(":serializer-jvm")
