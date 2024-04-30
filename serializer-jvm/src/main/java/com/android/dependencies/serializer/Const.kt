@@ -1,10 +1,5 @@
 package com.android.dependencies.serializer
 
-/**
- * @author liuzhongao
- * @since 2024/3/6 16:20
- */
-
 internal const val TYPE_NULL = -1
 internal const val TYPE_BYTE = 0
 internal const val TYPE_INT = 1
@@ -27,6 +22,8 @@ internal const val TYPE_SHORT_ARRAY = 16
 
 internal const val TYPE_LIST = 17
 internal const val TYPE_ARRAY = 18
+
+internal const val TYPE_PACKABLE = 19
 
 internal val Int.isArrayOrListType: Boolean
     get() = this == TYPE_BYTE_ARRAY || this == TYPE_INT_ARRAY || this == TYPE_LONG_ARRAY ||

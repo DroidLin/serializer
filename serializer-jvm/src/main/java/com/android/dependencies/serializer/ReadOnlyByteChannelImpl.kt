@@ -9,11 +9,11 @@ import java.io.Serializable
  * @author liuzhongao
  * @since 2024/3/6 15:57
  */
-fun SerializeReader(byteArray: ByteArray): SerializeReader = SerializeReaderImpl(byteArray)
+fun SerializeReader(byteArray: ByteArray): ReadOnlyByteChannel = ReadOnlyByteChannelImpl(byteArray)
 
-fun SerializeReader(inputStream: InputStream): SerializeReader = SerializeReaderImpl(inputStream)
+fun SerializeReader(inputStream: InputStream): ReadOnlyByteChannel = ReadOnlyByteChannelImpl(inputStream)
 
-private class SerializeReaderImpl : SerializeReader {
+private class ReadOnlyByteChannelImpl : ReadOnlyByteChannel {
 
     private val _objectInputStream: ObjectInputStream
 
@@ -89,6 +89,7 @@ private class SerializeReaderImpl : SerializeReader {
             TYPE_SHORT -> this._objectInputStream.readShort()
             TYPE_BOOLEAN -> this._objectInputStream.readBoolean()
             TYPE_STRING -> this._objectInputStream.readUTF()
+            TYPE_PACKABLE -> this._readPackable()
             TYPE_SERIALIZABLE -> this._objectInputStream.readObject()
             else -> throw UnsupportedValueTypeException("unsupported value type: $valueType")
         } as? T
@@ -113,5 +114,26 @@ private class SerializeReaderImpl : SerializeReader {
     override fun readShortArray(): ShortArray? = this.readValue() as? ShortArray
     override fun <T> readArray(): Array<T>? = this.readValue()
     override fun <T> readList(): List<T>? = this.readValue()
+    override fun <T : Packable> readPackable(): T? = this.readValue()
+
     override fun close(): Unit = this._objectInputStream.close()
+
+    private fun <T : Packable> _readPackable(): T? {
+        val valueClassName = this.readString()
+        return if (!valueClassName.isNullOrBlank()) {
+            findPackableCreator(valueClassName).newInstance<T>(this)
+        } else null
+    }
+
+    companion object {
+        @JvmStatic
+        private fun findPackableCreator(className: String): Packable.Creator {
+            val clazz = Class.forName(className)
+            val creatorField = clazz.getDeclaredField("CREATOR")
+            if (!creatorField.isAccessible) {
+                creatorField.isAccessible = true
+            }
+            return creatorField.get(null) as Packable.Creator
+        }
+    }
 }

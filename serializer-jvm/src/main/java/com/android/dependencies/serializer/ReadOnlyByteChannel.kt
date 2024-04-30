@@ -7,7 +7,7 @@ import java.io.Serializable
  * @author liuzhongao
  * @since 2024/3/6 15:49
  */
-interface SerializeReader : Closeable {
+interface ReadOnlyByteChannel : Closeable {
 
     fun <T> readValue(): T?
 
@@ -48,5 +48,7 @@ interface SerializeReader : Closeable {
     fun <T> readArray(): Array<T>?
 
     fun <T> readList(): List<T>?
+
+    fun <T : Packable> readPackable(): T?
 
 }

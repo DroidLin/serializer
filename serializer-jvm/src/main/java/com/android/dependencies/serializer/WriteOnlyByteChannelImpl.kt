@@ -8,12 +8,14 @@ import java.io.Serializable
  * @author liuzhongao
  * @since 2024/3/6 15:58
  */
-fun SerializeWriter(): SerializeWriter = SerializeWriterImpl()
+fun SerializeWriter(): WriteOnlyByteChannel = WriteOnlyByteChannelImpl()
 
-private class SerializeWriterImpl : SerializeWriter {
+private class WriteOnlyByteChannelImpl : WriteOnlyByteChannel {
 
     private val _byteArrayOutputStream = ByteArrayOutputStream()
     private val _objectOutputStream = ObjectOutputStream(this._byteArrayOutputStream)
+    override val bytePackage: BytePackage
+        get() = BytePackage(this._byteArrayOutputStream.toByteArray())
 
     override fun writeValue(value: Any?) {
         when (val valueType = this.getValueType(value = value)) {
@@ -27,6 +29,7 @@ private class SerializeWriterImpl : SerializeWriter {
             TYPE_SHORT -> this.writeShort(value as Short)
             TYPE_BOOLEAN -> this.writeBoolean(value as Boolean)
             TYPE_STRING -> this.writeString(value as? String)
+            TYPE_PACKABLE -> this.writePackable(value as? Packable)
             TYPE_SERIALIZABLE -> this.writeSerializable(value as? Serializable)
             TYPE_BYTE_ARRAY -> this.writeByteArray(value as? ByteArray)
             TYPE_INT_ARRAY -> this.writeIntArray(value as? IntArray)
@@ -285,7 +288,7 @@ private class SerializeWriterImpl : SerializeWriter {
         this._objectOutputStream.writeInt(TYPE_ARRAY)
         this._objectOutputStream.writeInt(end - start)
         for (index in start until end) {
-            this._objectOutputStream.writeObject(value[index])
+            this.writeValue(value[index])
         }
         this._objectOutputStream.flush()
     }
@@ -309,7 +312,13 @@ private class SerializeWriterImpl : SerializeWriter {
         this._objectOutputStream.flush()
     }
 
-    override fun toByteArray(): ByteArray = this._byteArrayOutputStream.toByteArray()
+    override fun <T : Packable> writePackable(value: T?) {
+        this._objectOutputStream.writeInt(TYPE_PACKABLE)
+        if (value != null) {
+            this.writeString(value.javaClass.name)
+            value.zipToWriter(this)
+        } else this.writeString(null)
+    }
 
     override fun close() {
         this._objectOutputStream.flush()

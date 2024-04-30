@@ -7,7 +7,9 @@ import java.io.Serializable
  * @author liuzhongao
  * @since 2024/3/6 15:48
  */
-interface SerializeWriter : Closeable {
+interface WriteOnlyByteChannel : Closeable {
+
+    val bytePackage: BytePackage
 
     fun writeValue(value: Any?)
 
@@ -67,5 +69,5 @@ interface SerializeWriter : Closeable {
 
     fun <T> writeList(value: List<T>?, start: Int, end: Int)
 
-    fun toByteArray(): ByteArray
+    fun <T : Packable> writePackable(value: T?)
 }
